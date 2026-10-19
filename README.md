@@ -203,3 +203,7 @@ analyses.
 ## Citation
 
 Rodriguez, V., Lehmann, B., & Diaz-Ordaz, K. (manuscript in preparation). *DR-Learners for Generalizing CATEs from a Randomized Controlled Trial.*
+
+## Licence
+
+This repository, including the `genhte` package and all analysis scripts, is licensed under the GNU General Public License v3.0 or later. See [LICENSE.md](LICENSE.md). The CASS data are not included and are subject to BioLINCC's data use terms.
