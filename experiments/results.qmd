@@ -1,0 +1,227 @@
+---
+title: "Paper figures"
+format: html
+---
+
+```{r}
+#| label: setup
+#| message: false
+
+library(dplyr)
+library(ggplot2)
+library(ggh4x)
+library(patchwork)
+
+source("02_plot_results.R")
+
+dir.create("plots", showWarnings = FALSE)
+out <- function(filename) file.path("plots", filename)
+```
+
+## Setting 1
+
+```{r}
+exp1 <- read.csv("exp1/final/exp1_results.csv")
+agg1 <- aggregate_exp1(exp1)
+
+cate_lab <- function(scenario) {
+  factor(
+    ifelse(grepl("nonlinear", scenario), "Non-linear", "Linear"),
+    levels = c("Linear", "Non-linear")
+  )
+}
+
+exp1_block <- function(d, x, col_labs, x_lab, x_breaks, right_strip) {
+  d$cate <- cate_lab(d$scenario)
+  d$col <- factor(col_labs[sub("_.*", "", d$scenario)], levels = unique(col_labs))
+  ggplot(d, aes(.data[[x]], median_mse_mean, colour = method, shape = method)) +
+    geom_line(linewidth = 0.6) +
+    geom_point(size = 2.2) +
+    facet_grid2(
+      cate ~ col,
+      scales = "free_y",
+      independent = "y",
+      axes = "x",
+      remove_labels = "x",
+      labeller = labeller(cate = label_value, col = label_parsed)
+    ) +
+    scale_colour_manual(values = method_colors) +
+    scale_shape_manual(values = method_shapes) +
+    scale_x_continuous(breaks = x_breaks) +
+    scale_y_continuous(labels = scales::label_number(accuracy = 0.1)) +
+    labs(x = x_lab, y = NULL, colour = NULL, shape = NULL) +
+    theme(strip.text.y = if (right_strip) element_text() else element_blank())
+}
+
+exp1_size <- exp1_block(
+  filter(agg1, baseline),
+  "ssize",
+  c(LD = "atop('Low-dim,', Delta==1)", HD = "atop('High-dim,', Delta==5)"),
+  expression("Trial size " * n[1]),
+  seq(500, 2500, 1000),
+  right_strip = FALSE
+)
+exp1_overlap <- exp1_block(
+  filter(agg1, ssize == 1000, grepl("^HD", scenario)),
+  "delta",
+  c(HD = "atop('High-dim,', n[1]==1000)"),
+  expression(Delta == "|" * X[S] * "\\" * X[tau] * "|"),
+  5:10,
+  right_strip = TRUE
+)
+
+exp1_combined <- (y_axis_title("Median squared error") | exp1_size | exp1_overlap) +
+  plot_layout(widths = c(0.04, 2, 1), guides = "collect") &
+  paper_text &
+  theme(
+    aspect.ratio = 0.88,
+    legend.position = "bottom",
+    legend.key.width = unit(0.8, "cm")
+  )
+ggsave(out("exp1_fig1_2_combined.pdf"), exp1_combined, width = 7.5, height = 5.3)
+```
+
+```{r}
+exp1_conformal <- plot_exp1_interval_width(agg1)
+exp1_conformal$data <- exp1_conformal$data |>
+  mutate(
+    dim_lab = factor(
+      ifelse(grepl("^LD", scenario), "'Low-dim,'~Delta==1", "'High-dim,'~Delta==5"),
+      levels = c("'Low-dim,'~Delta==1", "'High-dim,'~Delta==5")
+    ),
+    cate_lab = cate_lab(scenario),
+    conformal_label = factor(conformal_label, levels = c("Naive", "Inexact"))
+  )
+exp1_conformal <- exp1_conformal +
+  aes(shape = method) +
+  scale_shape_manual(values = method_shapes) +
+  facet_nested(
+    conformal_label ~ dim_lab + cate_lab,
+    scales = "free_y",
+    axes = "all",
+    remove_labels = "all",
+    nest_line = element_line(),
+    labeller = labeller(dim_lab = label_parsed, cate_lab = label_value)
+  ) +
+  scale_x_continuous(breaks = seq(500, 2500, 1000)) +
+  labs(
+    x = expression("Trial size " * n[1]),
+    y = "Average interval width",
+    colour = NULL,
+    shape = NULL,
+    linetype = NULL
+  ) +
+  guides(linetype = "none") +
+  paper_text +
+  theme(aspect.ratio = 0.6, legend.key.width = unit(0.8, "cm"))
+ggsave(out("exp1_fig5.pdf"), exp1_conformal, width = 10, height = 4.5)
+
+invisible(make_coverage_table(agg1, output_path = out("exp1_coverage_table.tex")))
+invisible(make_coverage_table(
+  agg1,
+  output_path = out("exp1_coverage_table_ite.tex"),
+  ite = TRUE
+))
+```
+
+## Setting 2
+
+```{r}
+exp2 <- read.csv("exp2/final/exp2_results.csv")
+agg2 <- aggregate_exp2(exp2)
+
+exp2_prog <- plot_exp2_prognostic(agg2, "median_mse_mean")
+exp2_size <- plot_exp2_trial_size(agg2, "median_mse_mean")
+
+split_panel_label <- function(p) {
+  add <- function(d) {
+    if (!is.data.frame(d) || !"panel_label" %in% names(d)) return(d)
+    d$dim_lab <- factor(sub(":.*", "", d$panel_label), levels = c("Low-Dim", "High-Dim"))
+    d$out_lab <- factor(
+      sub(".*: ", "", d$panel_label),
+      levels = c("Linear Outcome", "Non-Linear Outcome")
+    )
+    d
+  }
+  p$data <- add(p$data)
+  for (l in p$layers) l$data <- add(l$data)
+  p
+}
+
+exp2_prog_row <- as_grid_row(
+  split_panel_label(exp2_prog) + scale_y_log10(),
+  c("dim_lab", "out_lab"),
+  c(
+    "Low-Dim" = "Low-dim",
+    "High-Dim" = "High-dim",
+    "Linear Outcome" = "Linear",
+    "Non-Linear Outcome" = "Non-linear"
+  ),
+  "n[1]==1500",
+  expression("Additional prognostic covariates " * d[P])
+)
+exp2_size_row <- as_grid_row(
+  exp2_size + scale_y_log10() + scale_x_continuous(breaks = seq(500, 2500, 1000)),
+  "panel_label",
+  c(
+    "Low-Dim: Linear Outcome" = "Linear",
+    "Low-Dim: Non-Linear Outcome" = "Non-linear",
+    "High-Dim: Linear Outcome" = "Linear",
+    "High-Dim: Non-Linear Outcome" = "Non-linear"
+  ),
+  "d[P]==4",
+  expression("Trial size " * n[1])
+)
+
+exp2_combined <- (y_axis_title("Median squared error (log scale)") | (exp2_prog_row / exp2_size_row)) +
+  plot_layout(widths = c(0.03, 1), guides = "collect") &
+  paper_text &
+  theme(legend.position = "bottom", legend.key.width = unit(0.8, "cm"))
+ggsave(out("exp2_fig1_combined_logy.pdf"), exp2_combined, width = 10, height = 6.8)
+```
+
+## Setting 3
+
+```{r}
+exp3 <- read.csv("exp3/final/exp3_results.csv")
+agg3 <- aggregate_exp3(exp3)
+
+exp3_block <- function(p, fixed, x_lab) {
+  p$data$fixed <- fixed
+  p +
+    facet_nested(
+      cols = vars(fixed, scenario_label),
+      scales = "free_y",
+      independent = "y",
+      nest_line = element_line(),
+      labeller = labeller(
+        fixed = label_parsed,
+        scenario_label = as_labeller(c(
+          "Low-Dim: Non-Linear CATE" = "Low-dim",
+          "High-Dim: Non-Linear CATE" = "High-dim"
+        ))
+      )
+    ) +
+    labs(x = x_lab, y = NULL, colour = NULL, linetype = NULL, shape = NULL) +
+    theme(legend.title = element_blank())
+}
+
+exp3_subsample <- exp3_block(
+  plot_exp3_subsample_size(agg3, "median_mse_mean") +
+    scale_x_log10(breaks = c(500, 2000, 10000), labels = c("500", "2K", "10K")),
+  "n[1]==2000",
+  expression("Subsample size " * n[sub] * " (log scale)")
+)
+exp3_trial <- exp3_block(
+  plot_exp3_trial_size(agg3, "median_mse_mean") +
+    scale_x_continuous(breaks = seq(500, 2500, 1000)),
+  "n[sub]==5000",
+  expression("Trial size " * n[1])
+)
+
+exp3_combined <- (y_axis_title("Median squared error") | exp3_subsample | exp3_trial) +
+  plot_layout(widths = c(0.04, 1, 1), guides = "collect") &
+  paper_text &
+  theme(legend.position = "bottom", legend.key.width = unit(0.8, "cm"))
+ggsave(out("exp3_summary.pdf"), exp3_combined, width = 9.5, height = 3.95)
+```

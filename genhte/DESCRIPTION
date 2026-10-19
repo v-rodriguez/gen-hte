@@ -1,0 +1,20 @@
+Package: genhte
+Type: Package
+Title: Generalize heterogeneous treatment effects to target population
+Version: 0.1.0
+Authors@R: person("Vanessa", "Rodriguez", email = "vanessa.rodriguez.22@ucl.ac.uk",
+  role = c("aut", "cre"))
+Description: A package to implement T-Learner and DR-Learner with reweighting for treatment effect generalization.
+License: GPL (>= 3)
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.3.3
+Imports:
+    groupdata2,
+    nnls,
+    quantregForest,
+    ranger,
+    stats,
+    SuperLearner,
+    WeightIt,
+    xgboost

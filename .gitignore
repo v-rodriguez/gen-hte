@@ -1,0 +1,36 @@
+.DS_Store
+.Rhistory
+.RData
+.Ruserdata
+.Rproj.user/
+Rplots.pdf
+*.Rcheck/
+*.tar.gz
+.vscode/
+
+# Local environment and credentials
+.Renviron
+*.pem
+*.key
+
+# Simulation output
+experiments/*/results/
+experiments/*/final/
+experiments/*/plots/
+experiments/plots/
+example/example_results.png
+
+# CASS data and generated analysis artifacts are not distributed
+cass/data.RData
+cass/*.csv
+cass/*.rds
+cass/*.RData
+cass/*.pdf
+cass/*.png
+cass/plots/
+
+# Quarto render output
+.quarto/
+experiments/results.html
+experiments/results_files/
+experiments/.quarto/
