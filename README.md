@@ -202,7 +202,17 @@ analyses.
 
 ## Citation
 
-Rodriguez, V., Lehmann, B., & Diaz-Ordaz, K. (manuscript in preparation). *DR-Learners for Generalizing CATEs from a Randomized Controlled Trial.*
+Rodriguez, V., Lehmann, B., & Diaz-Ordaz, K. (2026). *DR-Learners for Generalizing CATEs from a Randomized Controlled Trial.* arXiv:2610.25405. https://arxiv.org/abs/2610.25405
+
+```bibtex
+@article{rodriguez2026drlearners,
+  title   = {DR-Learners for Generalizing CATEs from a Randomized Controlled Trial},
+  author  = {Rodriguez, Vanessa and Lehmann, Brieuc and Diaz-Ordaz, Karla},
+  journal = {arXiv preprint arXiv:2610.25405},
+  year    = {2026},
+  url     = {https://arxiv.org/abs/2610.25405}
+}
+```
 
 ## Licence
 
